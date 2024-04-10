@@ -105,11 +105,13 @@ void setup()
         // else
         // Serial.println("Created co_main thread");
 
-#if CO_NODE_ID == 10
+#if CO_NODE_ID == 1
         // vTaskDelay(pdMS_TO_TICKS(500));
         // auto const co_sdo_create = xTaskCreate(CO_SDOTask, static_cast<const char *>("CO_SDO"), 128, nullptr, CANOPEN_SDO_TASK_PRIO, &co_sdo_task);
-        // if (co_sdo_create != pdPASS) Serial.println("Failed to create 'co_sdo' thread");
-        // else Serial.println("Created co_sdo thread");
+        // if (co_sdo_create != pdPASS)
+        // Serial.println("Failed to create 'co_sdo' thread");
+        // else
+        // Serial.println("Created co_sdo thread");
 
 #endif
 
@@ -165,7 +167,7 @@ static void CAN_ctrl_task(void *args)
             rx_message = CAN.read();
 
             Serial.println(rx_message);
-            
+
             if (uxQueueSpacesAvailable(CAN_RX_queue))
             {
                 xQueueSend(CAN_RX_queue, (void *)&rx_message, 10);
@@ -192,8 +194,8 @@ static void CAN_ctrl_task(void *args)
         //     CAN.clearError();
         //     Serial.println("Error cleared");
         // }
-
-        vTaskDelay(configTICK_RATE_HZ);
+        Serial.println("CAN CTRL TASK");
+        vTaskDelay(100/ portTICK_PERIOD_MS);
     }
     xSemaphoreGive(CAN_ctrl_task_sem);
     vTaskDelete(nullptr);
@@ -417,7 +419,7 @@ static void CO_main(void *arg)
 
         reset = CO_RESET_NOT;
 
-        Serial.println("CNAOpenNode - Running...");
+        Serial.println("CANOpenNode - Running...");
         fflush(stdout);
 
         while (reset == CO_RESET_NOT)
@@ -426,13 +428,17 @@ static void CO_main(void *arg)
 
             reset = CO_process(CO, false, timeDifference_us, nullptr);
 
+            OD_PERSIST_COMM.x6000_counter++;
+
             /* Nonblocking application code may go here. */
 
             /* Process automatic storage */
 
             /* optional sleep for short time */
 
-            vTaskDelay(pdMS_TO_TICKS(1));
+            Serial.println("Inside CO PROCESS");
+
+            vTaskDelay(1 / portTICK_PERIOD_MS);
         }
     }
 
@@ -462,11 +468,11 @@ static void CO_tmrTask(void *arg)
 #endif
 #if (CO_CONFIG_PDO) & CO_CONFIG_TPDO_ENABLE
             CO_process_TPDO(CO, syncWas, timeDifference_us, nullptr);
+            Serial.println("PDO Process Running");
 #endif
-
             /* Further I/O or nonblocking application code may go here. */
         }
-        vTaskDelay(pdMS_TO_TICKS(1));
+        vTaskDelay(5 / portTICK_PERIOD_MS);
     }
     vTaskDelete(nullptr);
 }
@@ -476,7 +482,8 @@ static void CO_interruptTask(void *arg)
     while (1)
     {
         CO_CANinterrupt(CO->CANmodule);
-        vTaskDelay(1);
+        // Serial.println("Interrupt task");
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 
     vTaskDelete(nullptr);
